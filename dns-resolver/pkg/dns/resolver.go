@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"strings"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -13,11 +14,41 @@ import (
 const ROOT_SERVERS = "198.41.0.4,199.9.14.201,192.33.4.12,199.7.91.13,192.203.230.10,192.5.5.241,192.112.36.4,198.97.190.53"
 
 func HandlePacket(pc net.PacketConn, addr net.Addr, buf []byte) {
+	if err := handlePacket(pc, addr, buf); err != nil {
+		fmt.Printf("handle packet error %s : %s\n", addr.String(), err)
+	}
 
 }
 
 func handlePacket(pc net.PacketConn, addr net.Addr, buf []byte) error {
-	return fmt.Errorf("implementation in progress")
+	p := dnsmessage.Parser{}
+	header, err := p.Start(buf)
+	if err != nil {
+		return err
+	}
+	question, err := p.Question()
+	if err != nil {
+		return err
+	}
+	response, err := dnsQuery(getRootServers(), question)
+	if err != nil {
+		return err
+	}
+	response.Header.ID = header.ID
+
+	responseBuffer, err := response.Pack()
+	if err != nil {
+		return err
+	}
+	_, err = pc.WriteTo(responseBuffer, addr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func dnsQuery(servers []net.IP, question dnsmessage.Question) (*dnsmessage.Message, error) {
+	return nil, nil
 }
 
 func outgoingDnsQuery(servers []net.IP, question dnsmessage.Question) (*dnsmessage.Parser, *dnsmessage.Header, error) {
@@ -80,4 +111,12 @@ func outgoingDnsQuery(servers []net.IP, question dnsmessage.Question) (*dnsmessa
 	}
 
 	return &p, &header, nil
+}
+
+func getRootServers() []net.IP {
+	rootServers := []net.IP{}
+	for _, rootServer := range strings.Split(ROOT_SERVERS, ",") {
+		rootServers = append(rootServers, net.ParseIP(rootServer))
+	}
+	return rootServers
 }
