@@ -48,7 +48,76 @@ func handlePacket(pc net.PacketConn, addr net.Addr, buf []byte) error {
 }
 
 func dnsQuery(servers []net.IP, question dnsmessage.Question) (*dnsmessage.Message, error) {
-	return nil, nil
+	fmt.Printf("Question: %+v\n", question)
+	for i := 0; i < 3; i++ {
+		dnsAnswer, header, err := outgoingDnsQuery(servers, question)
+		if err != nil {
+			return nil, err
+		}
+		parsedAnswers, err := dnsAnswer.AllAnswers()
+		if err != nil {
+			return nil, err
+		}
+		if header.Authoritative {
+			return &dnsmessage.Message{
+				Header:  dnsmessage.Header{Response: true},
+				Answers: parsedAnswers,
+			}, nil
+		}
+		authorities, err := dnsAnswer.AllAuthorities()
+		if err != nil {
+			return nil, err
+		}
+		if len(authorities) == 0 {
+			return &dnsmessage.Message{
+				Header: dnsmessage.Header{RCode: dnsmessage.RCodeServerFailure},
+			}, nil
+		}
+		nameservers := make([]string, len(authorities))
+		for k, authority := range authorities {
+			if authority.Header.Type == dnsmessage.TypeNS {
+				nameservers[k] = authority.Body.(*dnsmessage.NSResource).NS.String()
+			}
+		}
+		additionals, err := dnsAnswer.AllAdditionals()
+		if err != nil {
+			return nil, err
+		}
+		servers = []net.IP{}
+		newResolverServersFound := false
+		for _, additional := range additionals {
+			if additional.Header.Type == dnsmessage.TypeA {
+				for _, nameserver := range nameservers {
+					if additional.Header.Name.String() == nameserver {
+						newResolverServersFound = true
+						servers = append(servers, additional.Body.(*dnsmessage.AResource).A[:])
+					}
+				}
+			}
+		}
+
+		if !newResolverServersFound {
+			for _, nameserver := range nameservers {
+				if !newResolverServersFound {
+					response, err := dnsQuery(getRootServers(), dnsmessage.Question{Name: dnsmessage.MustNewName(nameserver), Type: dnsmessage.TypeA, Class: dnsmessage.ClassINET})
+					if err != nil {
+						fmt.Printf("lookup of nameserver %s failed : %s\n", nameserver, err)
+					} else {
+						newResolverServersFound = true
+						for _, answer := range response.Answers {
+							if answer.Header.Type == dnsmessage.TypeA {
+								servers = append(servers, answer.Body.(*dnsmessage.AResource).A[:])
+							}
+						}
+					}
+				}
+			}
+			fmt.Printf("IPs found: %+v\n", servers)
+		}
+	}
+	return &dnsmessage.Message{
+		Header: dnsmessage.Header{RCode: dnsmessage.RCodeServerFailure},
+	}, nil
 }
 
 func outgoingDnsQuery(servers []net.IP, question dnsmessage.Question) (*dnsmessage.Parser, *dnsmessage.Header, error) {

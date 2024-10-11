@@ -9,7 +9,7 @@ import (
 
 func main() {
 	fmt.Printf("Starting DNS Server...\n")
-	packetConnection, err := net.ListenPacket("udp", ":53")
+	packetConnection, err := net.ListenPacket("udp", ":5354")
 	if err != nil {
 		panic(err)
 	}
