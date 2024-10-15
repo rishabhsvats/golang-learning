@@ -12,7 +12,7 @@ import (
 	"github.com/wardviaene/golang-for-devops-course/ssh-demo"
 )
 
-const configFile = ""
+const configFile = "config.yaml"
 
 func main() {
 	var (
