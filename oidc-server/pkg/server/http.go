@@ -1,18 +1,21 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 )
 
 type server struct {
-	PrivateKey []byte
-	Config     Config
+	PrivateKey   []byte
+	Config       Config
+	LoginRequest map[string]LoginRequest
 }
 
 func newServer(privateKey []byte, config Config) *server {
 	return &server{
-		PrivateKey: privateKey,
-		Config:     config,
+		PrivateKey:   privateKey,
+		Config:       config,
+		LoginRequest: make(map[string]LoginRequest),
 	}
 }
 
@@ -27,4 +30,10 @@ func Start(httpServer *http.Server, privateKey []byte, config Config) error {
 	http.HandleFunc("/userinfo", s.userinfo)
 
 	return httpServer.ListenAndServe()
+}
+
+func returnError(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(err.Error()))
+	fmt.Printf("Error: %s\n", err)
 }
