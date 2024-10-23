@@ -9,6 +9,7 @@ type server struct {
 	PrivateKey   []byte
 	Config       Config
 	LoginRequest map[string]LoginRequest
+	Codes        map[string]LoginRequest
 }
 
 func newServer(privateKey []byte, config Config) *server {
@@ -16,6 +17,7 @@ func newServer(privateKey []byte, config Config) *server {
 		PrivateKey:   privateKey,
 		Config:       config,
 		LoginRequest: make(map[string]LoginRequest),
+		Codes:        make(map[string]LoginRequest),
 	}
 }
 
