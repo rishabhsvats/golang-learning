@@ -11,11 +11,14 @@ import (
 const redirectUri = "http://localhost:8081/callback"
 
 type app struct {
+	states map[string]bool
 }
 
 func main() {
 
-	a := app{}
+	a := app{
+		states: make(map[string]bool),
+	}
 
 	http.HandleFunc("/", a.index)
 	http.HandleFunc("/callback", a.callback)
@@ -38,7 +41,9 @@ func (a *app) index(w http.ResponseWriter, r *http.Request) {
 		returnError(w, fmt.Errorf("GetRandomString error: %s", err))
 		return
 	}
-	authorizationURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%sscope=openid&response_type=code&state=%s", discovery.AuthorizationEndpoint, os.Getenv("CLIENT_ID"), redirectUri, state)
+	a.states[state] = true
+
+	authorizationURL := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&scope=openid&response_type=code&state=%s", discovery.AuthorizationEndpoint, os.Getenv("CLIENT_ID"), redirectUri, state)
 	w.Write([]byte(`
 	<html>
 	<body>
@@ -48,7 +53,23 @@ func (a *app) index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) callback(w http.ResponseWriter, r *http.Request) {
-
+	oidcEndpoint := os.Getenv("OIDC_ENDPOINT")
+	discovery, err := oidc.ParseDiscovery(oidcEndpoint + "/.well-known/openid-configuration")
+	if err != nil {
+		returnError(w, fmt.Errorf("parse discovery error: %s", err))
+		return
+	}
+	if _, ok := a.states[r.URL.Query().Get("state")]; !ok {
+		returnError(w, fmt.Errorf("state mismatch error"))
+		return
+	}
+	delete(a.states, r.URL.Query().Get("state"))
+	_, claims, err := getTokenFromCode(discovery.TokenEndpoint, discovery.JwksURI, redirectUri, os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"), r.URL.Query().Get("code"))
+	if err != nil {
+		returnError(w, fmt.Errorf("get token from code error: %s", err))
+		return
+	}
+	w.Write([]byte("Token received: " + claims.Subject))
 }
 func returnError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
