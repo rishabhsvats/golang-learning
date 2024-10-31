@@ -1,16 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/rishabhsvats/oidc-server/pkg/oidc"
 )
 
 // gets token from tokenUrl validating token with jwksUrl and returning token & claims
-func getTokenFromCode(tokenUrl, jwksUrl, redirectUri, clientID, clientSecret, code string) (*jwt.Token, *jwt.StandardClaims, error) {
+func getTokenFromCode(tokenUrl, jwksUrl, redirectUri, clientID, clientSecret, code string) (*jwt.Token, *jwt.RegisteredClaims, error) {
 	values := url.Values{}
 	values.Add("grant_type", "authorization_code")
 	values.Add("client_id", clientID)
@@ -30,6 +32,21 @@ func getTokenFromCode(tokenUrl, jwksUrl, redirectUri, clientID, clientSecret, co
 	if res.StatusCode != 200 {
 		return nil, nil, fmt.Errorf("status code was not 200")
 	}
-	fmt.Printf("body: %s", body)
-	return nil, nil, fmt.Errorf("not yet fully implemented")
+
+	var token oidc.Token
+	err = json.Unmarshal(body, &token)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unmasrhal token error: %s", err)
+
+	}
+
+	claims := &jwt.RegisteredClaims{}
+	parsedToken, err := jwt.ParseWithClaims(token.IDToken, claims, func(*jwt.Token) (interface{}, error) {
+		return nil, nil
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("token parsing failed: %s", err)
+	}
+
+	return parsedToken, claims, nil
 }
