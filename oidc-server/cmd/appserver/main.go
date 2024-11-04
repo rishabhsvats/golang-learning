@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -64,12 +65,34 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	delete(a.states, r.URL.Query().Get("state"))
-	_, claims, err := getTokenFromCode(discovery.TokenEndpoint, discovery.JwksURI, redirectUri, os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"), r.URL.Query().Get("code"))
+	accessToken, _, err := getTokenFromCode(discovery.TokenEndpoint, discovery.JwksURI, redirectUri, os.Getenv("CLIENT_ID"), os.Getenv("CLIENT_SECRET"), r.URL.Query().Get("code"))
 	if err != nil {
 		returnError(w, fmt.Errorf("get token from code error: %s", err))
 		return
 	}
-	w.Write([]byte("Token received: " + claims.Subject))
+
+	req, err := http.NewRequest("GET", discovery.UserinfoEndpoint, nil)
+	if err != nil {
+		returnError(w, fmt.Errorf("new request error: %s", err))
+		return
+	}
+	req.Header.Add("Authorization", "Bearer "+accessToken.Raw)
+
+	client := &http.Client{}
+
+	res, err := client.Do(req)
+	if err != nil {
+		returnError(w, fmt.Errorf("do request error: %s", err))
+		return
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		returnError(w, fmt.Errorf("read all error: %s", err))
+		return
+	}
+
+	w.Write([]byte(fmt.Sprintf("Token received. Userinfo: %s", body)))
 }
 func returnError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)

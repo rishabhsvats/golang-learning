@@ -44,7 +44,7 @@ func getTokenFromCode(tokenUrl, jwksUrl, redirectUri, clientID, clientSecret, co
 	}
 
 	claims := &jwt.RegisteredClaims{}
-	parsedToken, err := jwt.ParseWithClaims(token.IDToken, claims, func(token *jwt.Token) (interface{}, error) {
+	_, err = jwt.ParseWithClaims(token.IDToken, claims, func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"]
 		if !ok {
 			return nil, fmt.Errorf("kid not found")
@@ -59,8 +59,23 @@ func getTokenFromCode(tokenUrl, jwksUrl, redirectUri, clientID, clientSecret, co
 	if err != nil {
 		return nil, nil, fmt.Errorf("token parsing failed: %s", err)
 	}
+	AccessTokenclaims := &jwt.RegisteredClaims{}
+	parsedAccessToken, err := jwt.ParseWithClaims(token.AccessToken, AccessTokenclaims, func(token *jwt.Token) (interface{}, error) {
+		kid, ok := token.Header["kid"]
+		if !ok {
+			return nil, fmt.Errorf("kid not found")
+		}
+		publicKey, err := getPublicKeyFromJwks(jwksUrl, kid.(string))
+		if err != nil {
+			return nil, fmt.Errorf("getPublicKeyFromJwks error: %s", err)
+		}
 
-	return parsedToken, claims, nil
+		return publicKey, nil
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("token parsing failed: %s", err)
+	}
+	return parsedAccessToken, claims, nil
 }
 
 func getPublicKeyFromJwks(jwksUrl string, kid string) (*rsa.PublicKey, error) {
