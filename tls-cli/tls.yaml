@@ -1,0 +1,20 @@
+caCert:
+  serial: 1
+  validForYears: 10
+  subject:
+    country: IN
+    organization: RS
+    organizationalUnit: Certificate Management
+    locality: MH
+    commonName: CA Certificate
+certs:
+  go-demo.localtest.me:
+    serial: 1
+    validForYears: 1
+    dnsNames: ["go-demo.localtest.me", "go-demo-2.localtest.me"]
+    subject:
+      country: IN
+      organization: RS
+      organizationalUnit: go-demo department
+      locality: MH
+      commonName: go-demo.localtest.me
