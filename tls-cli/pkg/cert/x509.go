@@ -38,10 +38,10 @@ func CreateCACert(ca *CACert, keyFilePath, caCertFilePath string) error {
 		return err
 	}
 
-	if err = ioutil.WriteFile(keyFilePath, keyBytes, 600); err != nil {
+	if err = ioutil.WriteFile(keyFilePath, keyBytes, 0600); err != nil {
 		return err
 	}
-	if err = ioutil.WriteFile(caCertFilePath, certBytes, 644); err != nil {
+	if err = ioutil.WriteFile(caCertFilePath, certBytes, 0644); err != nil {
 		return err
 	}
 	return nil
