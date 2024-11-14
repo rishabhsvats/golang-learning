@@ -41,7 +41,7 @@ func CreateCACert(ca *CACert, keyFilePath, caCertFilePath string) error {
 	if err = ioutil.WriteFile(keyFilePath, keyBytes, 600); err != nil {
 		return err
 	}
-	if err = ioutil.WriteFile(caCertFilePath, certBytes, 64); err != nil {
+	if err = ioutil.WriteFile(caCertFilePath, certBytes, 644); err != nil {
 		return err
 	}
 	return nil
@@ -65,6 +65,27 @@ func CreateCert(cert *Cert, caKey []byte, caCert []byte, keyFilePath, certFilePa
 		IsCA:        true,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature,
+		DNSNames:    removeEmptyString(cert.DNSNames),
+	}
+
+	caKeyParsed, err := key.PrivateKeyPemToRSA(caKey)
+	if err != nil {
+		return err
+	}
+	caCertParsed, err := PemToX509(caCert)
+	if err != nil {
+		return err
+	}
+	keyBytes, certBytes, err := createCert(template, caKeyParsed, caCertParsed)
+	if err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(keyFilePath, keyBytes, 0600); err != nil {
+		return err
+	}
+	if err = ioutil.WriteFile(certFilePath, certBytes, 0644); err != nil {
+		return err
 	}
 	return nil
 }
@@ -86,7 +107,10 @@ func createCert(template *x509.Certificate, caKey *rsa.PrivateKey, caCert *x509.
 			return nil, nil, err
 		}
 	} else {
-
+		derBytes, err = x509.CreateCertificate(rand.Reader, template, caCert, &privateKey.PublicKey, caKey)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	if err = pem.Encode(&certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
 		return nil, nil, err
