@@ -57,4 +57,21 @@ func createEC2(ctx context.Context, region string) (string, error) {
 	if len(imageOutput.Images) == 0 {
 		return "", fmt.Errorf("imageOutput.Images is 0 length")
 	}
+
+	instance, err := ec2Client.RunInstances(ctx, &ec2.RunInstancesInput{
+		ImageId:      imageOutput.Images[0].ImageId,
+		KeyName:      aws.String("go-aws-demo"),
+		InstanceType: types.InstanceTypeT3Micro,
+		MinCount:     aws.Int32(1),
+		MaxCount:     aws.Int32(1),
+	})
+	if err != nil {
+		return "", fmt.Errorf("RunInstances error: %s", err)
+	}
+
+	if len(instance.Instances) == 0 {
+		return "", fmt.Errorf("instance.Instances is of length 0")
+	}
+
+	return *instance.Instances[0].InstanceId, nil
 }
