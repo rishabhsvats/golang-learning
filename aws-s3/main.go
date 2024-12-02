@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
@@ -32,6 +35,7 @@ func main() {
 		fmt.Printf("uploadToS3Bucket error: %s", err)
 		os.Exit(1)
 	}
+	fmt.Printf("Upload complete.\n")
 
 }
 
@@ -73,6 +77,15 @@ func createS3Bucket(ctx context.Context, s3Client *s3.Client) error {
 }
 
 func uploadToS3Bucket(ctx context.Context, s3Client *s3.Client) error {
-
+	testFile, err := ioutil.ReadFile("test.txt")
+	uploader := manager.NewUploader(s3Client)
+	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String("test.txt"),
+		Body:   bytes.NewReader(testFile),
+	})
+	if err != nil {
+		return fmt.Errorf("upload error: %s", err)
+	}
 	return nil
 }
