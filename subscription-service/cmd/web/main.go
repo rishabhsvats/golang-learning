@@ -2,10 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -17,24 +23,50 @@ func main() {
 
 	//connect to the database
 	db := initDB()
-	db.Ping()
+
 	// create sessions
+
+	session := initSession()
+	//create loggers
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	//create channels
 
 	//create waitgroup
-
+	wg := sync.WaitGroup{}
 	//set up the application config
-
+	app := Config{
+		Session:  session,
+		DB:       db,
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+		Wait:     &wg,
+	}
 	//setup mail
 
 	//listen for web connections
+	app.serve()
+}
+
+func (app *Config) serve() {
+	//start the http server
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", webPort),
+		Handler: app.routes(),
+	}
+
+	app.InfoLog.Println("Starting web server...")
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func initDB() *sql.DB {
 
 	conn := connectToDB()
-	if conn != nil {
+	if conn == nil {
 		log.Panic("can't connect to the database")
 	}
 	return conn
@@ -49,7 +81,7 @@ func connectToDB() *sql.DB {
 		if err != nil {
 			log.Println("postgres not yet ready")
 		} else {
-			log.Println("connect to database!")
+			log.Println("connected to database!")
 			return connection
 		}
 
@@ -75,4 +107,25 @@ func openDB(dsn string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func initSession() *scs.SessionManager {
+	session := scs.New()
+	session.Store = redisstore.New(initRedis())
+	session.Lifetime = 24 * time.Hour
+	session.Cookie.Persist = true
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	session.Cookie.Secure = true
+
+	return session
+}
+
+func initRedis() *redis.Pool {
+	redisPool := &redis.Pool{
+		MaxIdle: 10,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", os.Getenv("REDIS"))
+		},
+	}
+	return redisPool
 }

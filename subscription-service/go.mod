@@ -5,6 +5,8 @@ go 1.21.3
 require (
 	github.com/alexedwards/scs/redisstore v0.0.0-20250212122300-421ef1d8611c // indirect
 	github.com/alexedwards/scs/v2 v2.8.0 // indirect
+	github.com/garyburd/redigo v1.6.4 // indirect
+	github.com/go-chi/chi v1.5.5 // indirect
 	github.com/go-chi/chi/v5 v5.2.1 // indirect
 	github.com/gomodule/redigo v1.8.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
