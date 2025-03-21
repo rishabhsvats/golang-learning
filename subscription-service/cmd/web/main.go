@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/alexedwards/scs/redisstore"
@@ -17,7 +19,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-const webPort = "8080"
+const webPort = "8081"
 
 func main() {
 
@@ -45,6 +47,7 @@ func main() {
 	}
 	//setup mail
 
+	go app.listenForShutdown()
 	//listen for web connections
 	app.serve()
 }
@@ -128,4 +131,22 @@ func initRedis() *redis.Pool {
 		},
 	}
 	return redisPool
+}
+
+func (app *Config) listenForShutdown() {
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	app.shutdown()
+	os.Exit(0)
+
+}
+
+func (app *Config) shutdown() {
+	app.InfoLog.Println("would run cleanup tasks..")
+
+	app.Wait.Wait()
+
+	app.InfoLog.Println("closing channels and shutting down application..")
 }
