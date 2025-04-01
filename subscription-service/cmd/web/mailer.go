@@ -22,7 +22,7 @@ type Mail struct {
 	FromName    string
 	Wait        *sync.WaitGroup
 	MailerChan  chan Message
-	ErrorChhan  chan error
+	ErrorChan   chan error
 	DoneChan    chan bool
 }
 
@@ -39,8 +39,21 @@ type Message struct {
 
 // a function to listen for messages on the MailerChan
 
-func (m *Mail) sendMail(msg Message, errorChan chan error) {
+func (app *Config) listenForMail() {
+	for {
+		select {
+		case msg := <-app.Mailer.MailerChan:
+			go app.Mailer.sendMail(msg, app.Mailer.ErrorChan)
+		case err := <-app.Mailer.ErrorChan:
+			app.ErrorLog.Println(err)
+		case <-app.Mailer.DoneChan:
+			return
+		}
+	}
+}
 
+func (m *Mail) sendMail(msg Message, errorChan chan error) {
+	defer m.Wait.Done()
 	if msg.Template == "" {
 		msg.Template = "mail"
 	}

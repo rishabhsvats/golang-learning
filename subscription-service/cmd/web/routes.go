@@ -27,7 +27,7 @@ func (app *Config) routes() http.Handler {
 			Encryption:  "none",
 			FromAddress: "info@company.com",
 			FromName:    "info",
-			ErrorChhan:  make(chan error),
+			ErrorChan:   make(chan error),
 		}
 		msg := Message{
 			To:      "me@test.com",
