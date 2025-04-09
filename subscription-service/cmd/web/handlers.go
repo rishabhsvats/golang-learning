@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/rishabhsvats/golang-learning/subscription-service/data"
 )
@@ -154,10 +155,22 @@ func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 
 func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 	//get the id of the plan that is chosen
+	id := r.URL.Query().Get("id")
+	planID, _ := strconv.Atoi(id)
 	//get the plan from the database
-
+	plan, err := app.Models.Plan.GetOne(planID)
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "Unable to find plan.")
+		http.Redirect(w, r, "/members/plans", http.StatusSeeOther)
+		return
+	}
 	//get the user from the session
-
+	user, ok := app.Session.Get(r.Context(), "user").(data.User)
+	if !ok {
+		app.Session.Put(r.Context(), "error", "Login in first!")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 	//generate an invoice
 
 	//send an email with the invoice attached
@@ -172,11 +185,6 @@ func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Config) ChooseSubscription(w http.ResponseWriter, r *http.Request) {
-	if !app.Session.Exists(r.Context(), "userID") {
-		app.Session.Put(r.Context(), "warning", "You must log in to see this page!")
-		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
-		return
-	}
 
 	plans, err := app.Models.Plan.GetAll()
 	if err != nil {
