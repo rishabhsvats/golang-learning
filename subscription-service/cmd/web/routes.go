@@ -43,7 +43,7 @@ func (app *Config) routes() http.Handler {
 func (app *Config) authRouter() http.Handler {
 	mux := chi.NewRouter()
 	mux.Use(app.Auth)
-	mux.Get("/plan", app.ChooseSubscription)
+	mux.Get("/plans", app.ChooseSubscription)
 	mux.Get("/subscribe", app.SubscribeToPlan)
 	return mux
 }
