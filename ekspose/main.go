@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -27,4 +29,6 @@ func main() {
 		// handle error
 		fmt.Printf("error %s, creating clientset\n", err.Error())
 	}
+
+	informers := informers.NewSharedInformerFactory(clientset, 10*time.Minute)
 }
