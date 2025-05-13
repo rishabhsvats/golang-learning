@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
 	"k8s.io/client-go/kubernetes"
@@ -58,6 +62,7 @@ func (c *controller) processItem() bool {
 	if shutdown {
 		return false
 	}
+	defer c.queue.Forget(item)
 	key, err := cache.MetaNamespaceKeyFunc(item)
 	if err != nil {
 		fmt.Printf("getting key from cache error %s\n", err.Error())
@@ -77,8 +82,40 @@ func (c *controller) processItem() bool {
 }
 
 func (c *controller) syncDeployment(ns, name string) error {
+	ctx := context.Background()
+	dep, err := c.depLister.Deployments(ns).Get(name)
+	if err != nil {
+		fmt.Printf("error getting deployment from lister %s\n", err.Error())
+	}
 
+	//create service
+	// we have to modify this to identify the port
+	// the deployment's container is exposing
+	svc := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dep.Name,
+			Namespace: ns,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: depLabels(*dep),
+			Ports: []corev1.ServicePort{
+				corev1.ServicePort{
+					Name: "http",
+					Port: 80,
+				},
+			},
+		},
+	}
+	_, err = c.clientset.CoreV1().Services(ns).Create(ctx, &svc, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("error in creating service %s\n", err.Error())
+	}
+	//create ingress
 	return nil
+}
+
+func depLabels(dep appsv1.Deployment) map[string]string {
+	return dep.Spec.Template.Labels
 }
 
 func (c *controller) handleAdd(obj interface{}) {
