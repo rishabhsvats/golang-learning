@@ -7,6 +7,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
@@ -106,14 +107,19 @@ func (c *controller) syncDeployment(ns, name string) error {
 			},
 		},
 	}
-	_, err = c.clientset.CoreV1().Services(ns).Create(ctx, &svc, metav1.CreateOptions{})
+	s, err := c.clientset.CoreV1().Services(ns).Create(ctx, &svc, metav1.CreateOptions{})
 	if err != nil {
 		fmt.Printf("error in creating service %s\n", err.Error())
 	}
 	//create ingress
-	return nil
+	return createIngress(ctx, c.clientset, s)
 }
 
+func createIngress(ctx context.Context, client kubernetes.Interface, svc *corev1.Service) error {
+	ingress := netv1.Ingress{}
+	_, err := client.NetworkingV1().Ingresses(svc.Namespace).Create(ctx, &ingress, metav1.CreateOptions{})
+	return err
+}
 func depLabels(dep appsv1.Deployment) map[string]string {
 	return dep.Spec.Template.Labels
 }
