@@ -121,6 +121,9 @@ func createIngress(ctx context.Context, client kubernetes.Interface, svc *corev1
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svc.Name,
 			Namespace: svc.Namespace,
+			Annotations: map[string]string{
+				"nginx.ingress.kubernetes.io/rewrite-target": "/",
+			},
 		},
 		Spec: netv1.IngressSpec{
 			Rules: []netv1.IngressRule{
