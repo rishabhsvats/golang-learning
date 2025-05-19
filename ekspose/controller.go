@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
@@ -71,6 +72,13 @@ func (c *controller) processItem() bool {
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		fmt.Printf("splitting key into name and namespace error %s\n", err.Error())
+	}
+	//check if the object has been deleted from k8s cluster
+	ctx := context.Background()
+	dep, err := c.clientset.AppsV1().Deployments(ns).Get(ctx, name, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		fmt.Printf("handle delete event for dep %s\n", dep.Name)
+		return true
 	}
 	err = c.syncDeployment(ns, name)
 	if err != nil {
