@@ -7,28 +7,36 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Kluster struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec KlusterSpec
+	Spec   KlusterSpec   `json:"spec,omitempty"`
+	Status KlusterStatus `json:"status,omitempty"`
 }
-
+type KlusterStatus struct {
+	KlusterID  string `json:"klusterID,omitempty"`
+	Progress   string `json:"progress,omitempty"`
+	KubeConfig string `json:"kubeConfig,omitempty"`
+}
 type KlusterSpec struct {
-	Name    string
-	Region  string
-	Version string
+	Name        string `json:"name,omitempty"`
+	Region      string `json:"region,omitempty"`
+	Version     string `json:"version,omitempty"`
+	TokenSecret string `json:"tokenSecret,omitempty"`
 
-	NodePools []NodePool
+	NodePools []NodePool `json:"nodePools,omitempty"`
 }
 
 type NodePool struct {
-	Size  string
-	Name  string
-	Count int
+	Size  string `json:"size,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Count int    `json:"count,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KlusterList struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+
+	Items []Kluster `json:"items,omitempty"`
 }

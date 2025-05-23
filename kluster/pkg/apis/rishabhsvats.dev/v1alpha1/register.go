@@ -13,10 +13,12 @@ var SchemeGroupVersion = schema.GroupVersion{
 
 var (
 	SchemeBuilder runtime.SchemeBuilder
+	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
 func init() {
 	SchemeBuilder.Register(addKnownTypes)
+
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {

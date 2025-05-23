@@ -21,8 +21,8 @@ import (
 	http "net/http"
 
 	rishabhsvatsdevv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
+	scheme "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
-	scheme "k8s.io/sample-controller/pkg/generated/clientset/versioned/scheme"
 )
 
 type RishabhsvatsV1alpha1Interface interface {
