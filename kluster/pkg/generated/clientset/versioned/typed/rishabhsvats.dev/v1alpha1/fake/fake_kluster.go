@@ -19,8 +19,8 @@ package fake
 
 import (
 	v1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
+	rishabhsvatsdevv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
 	gentype "k8s.io/client-go/gentype"
-	rishabhsvatsdevv1alpha1 "k8s.io/sample-controller/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
 )
 
 // fakeKlusters implements KlusterInterface

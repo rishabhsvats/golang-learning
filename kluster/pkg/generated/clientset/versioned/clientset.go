@@ -21,10 +21,10 @@ import (
 	fmt "fmt"
 	http "net/http"
 
+	rishabhsvatsv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	rishabhsvatsv1alpha1 "k8s.io/sample-controller/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
 )
 
 type Interface interface {

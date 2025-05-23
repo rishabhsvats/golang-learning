@@ -18,15 +18,15 @@ limitations under the License.
 package fake
 
 import (
+	clientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
+	rishabhsvatsv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
+	fakerishabhsvatsv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "k8s.io/sample-controller/pkg/generated/clientset/versioned"
-	rishabhsvatsv1alpha1 "k8s.io/sample-controller/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1"
-	fakerishabhsvatsv1alpha1 "k8s.io/sample-controller/pkg/generated/clientset/versioned/typed/rishabhsvats.dev/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

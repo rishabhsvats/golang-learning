@@ -21,11 +21,11 @@ import (
 	context "context"
 
 	rishabhsvatsdevv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
+	scheme "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
-	scheme "k8s.io/sample-controller/pkg/generated/clientset/versioned/scheme"
 )
 
 // KlustersGetter has a method to return a KlusterInterface.
@@ -38,6 +38,8 @@ type KlustersGetter interface {
 type KlusterInterface interface {
 	Create(ctx context.Context, kluster *rishabhsvatsdevv1alpha1.Kluster, opts v1.CreateOptions) (*rishabhsvatsdevv1alpha1.Kluster, error)
 	Update(ctx context.Context, kluster *rishabhsvatsdevv1alpha1.Kluster, opts v1.UpdateOptions) (*rishabhsvatsdevv1alpha1.Kluster, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, kluster *rishabhsvatsdevv1alpha1.Kluster, opts v1.UpdateOptions) (*rishabhsvatsdevv1alpha1.Kluster, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*rishabhsvatsdevv1alpha1.Kluster, error)
