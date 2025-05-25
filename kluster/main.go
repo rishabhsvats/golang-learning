@@ -36,13 +36,13 @@ func main() {
 
 	klientset, err := klient.NewForConfig(config)
 	if err != nil {
-		log.Printf("getting klient set %s\n", err.Error())
+		log.Printf("getting klient set %s \n", err.Error())
 	}
 	fmt.Println(klientset)
-	kluster, err := klientset.RishabhsvatsV1alpha1().Klusters("").List(context.Background(), metav1.ListOptions{})
+	klusters, err := klientset.RishabhsvatsV1alpha1().Klusters("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		log.Printf("listing klusters %s\n", err.Error())
 	}
-	log.Printf("length of klusters is %d\n", len(kluster.Name))
+	log.Printf("length of klusters is %d and name is %s\n", len(klusters.Items), klusters.Items[0].Name)
 
 }
