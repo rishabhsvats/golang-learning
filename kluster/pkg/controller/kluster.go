@@ -2,10 +2,12 @@ package controller
 
 import (
 	"log"
+	"time"
 
 	klientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
 	kinf "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/informers/externalversions/rishabhsvats.dev/v1alpha1"
 	klister "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/listers/rishabhsvats.dev/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/client-go/util/workqueue"
@@ -39,8 +41,25 @@ func NewController(klient klientset.Interface, klusterInformer kinf.KlusterInfor
 	return c
 }
 
-func (c *Controller) Run() error {
+func (c *Controller) Run(ch chan struct{}) error {
+	if ok := cache.WaitForCacheSync(ch, c.klusterSynced); !ok {
+		log.Println("cache was not synced")
+	}
+
+	go wait.Until(c.worker, time.Second, ch)
+
+	<-ch
 	return nil
+}
+
+func (c *Controller) worker() {
+	for c.processNextItem() {
+
+	}
+}
+
+func (c *Controller) processNextItem() bool {
+	return true
 }
 
 func (c *Controller) handleAdd(obj interface{}) {

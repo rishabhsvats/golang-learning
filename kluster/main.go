@@ -44,7 +44,7 @@ func main() {
 	ch := make(chan struct{})
 	c := controller.NewController(klientset, informerFactory.Rishabhsvats().V1alpha1().Klusters())
 	informerFactory.Start(ch)
-	if err := c.Run(); err != nil {
+	if err := c.Run(ch); err != nil {
 		log.Printf("error running controller : %v\n", err.Error())
 	}
 }
