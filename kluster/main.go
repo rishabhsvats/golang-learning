@@ -1,18 +1,19 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 
+	"github.com/rishabhsvats/golang-learning/kluster/pkg/controller"
 	klient "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kInfFac "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/informers/externalversions"
 )
 
 func main() {
@@ -39,10 +40,11 @@ func main() {
 		log.Printf("getting klient set %s \n", err.Error())
 	}
 	fmt.Println(klientset)
-	klusters, err := klientset.RishabhsvatsV1alpha1().Klusters("").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.Printf("listing klusters %s\n", err.Error())
+	informerFactory := kInfFac.NewSharedInformerFactory(klientset, 20*time.Minute)
+	ch := make(chan struct{})
+	c := controller.NewController(klientset, informerFactory.Rishabhsvats().V1alpha1().Klusters())
+	informerFactory.Start(ch)
+	if err := c.Run(); err != nil {
+		log.Printf("error running controller : %v\n", err.Error())
 	}
-	log.Printf("length of klusters is %d and name is %s\n", len(klusters.Items), klusters.Items[0].Name)
-
 }

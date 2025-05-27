@@ -39,6 +39,10 @@ func NewController(klient klientset.Interface, klusterInformer kinf.KlusterInfor
 	return c
 }
 
+func (c *Controller) Run() error {
+	return nil
+}
+
 func (c *Controller) handleAdd(obj interface{}) {
 	log.Println("handleAdd was called")
 	c.wq.Add(obj)
