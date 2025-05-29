@@ -59,6 +59,32 @@ func (c *Controller) worker() {
 }
 
 func (c *Controller) processNextItem() bool {
+	item, shutdown := c.wq.Get()
+	if shutdown {
+		//log
+		return false
+	}
+	defer c.wq.Forget(item)
+	key, err := cache.MetaNamespaceKeyFunc(item)
+	if err != nil {
+		log.Printf("error %s calling namespace key func on cache item", err.Error())
+		return false
+	}
+
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		log.Printf("splitting key into namespace and name, error %s\n", err.Error())
+		return false
+	}
+
+	kluster, err := c.kLister.Klusters(ns).Get(name)
+	if err != nil {
+		log.Printf("error %s, getting the kluster resource from lister\n", err.Error())
+		return false
+	}
+
+	log.Printf("kluster spec that we have is %+v\n", kluster.Spec)
+
 	return true
 }
 
