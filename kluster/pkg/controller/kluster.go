@@ -4,16 +4,19 @@ import (
 	"log"
 	"time"
 
+	"github.com/rishabhsvats/golang-learning/kluster/pkg/do"
 	klientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
 	kinf "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/informers/externalversions/rishabhsvats.dev/v1alpha1"
 	klister "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/listers/rishabhsvats.dev/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	"k8s.io/client-go/util/workqueue"
 )
 
 type Controller struct {
+	client kubernetes.Interface
 	// clientset for custom resource kluster
 	klient klientset.Interface
 	// cluster cache has synced
@@ -24,8 +27,9 @@ type Controller struct {
 	wq workqueue.RateLimitingInterface
 }
 
-func NewController(klient klientset.Interface, klusterInformer kinf.KlusterInformer) *Controller {
+func NewController(client kubernetes.Interface, klient klientset.Interface, klusterInformer kinf.KlusterInformer) *Controller {
 	c := &Controller{
+		client:        client,
 		klient:        klient,
 		klusterSynced: klusterInformer.Informer().HasSynced,
 		kLister:       klusterInformer.Lister(),
@@ -84,7 +88,10 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	log.Printf("kluster spec that we have is %+v\n", kluster.Spec)
+	err = do.Create(c.client, kluster.Spec.TokenSecret)
+	if err != nil {
 
+	} //dp
 	return true
 }
 
