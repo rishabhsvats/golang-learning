@@ -2,22 +2,40 @@ package do
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/digitalocean/godo"
+	"github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func Create(c kubernetes.Interface, sec string) error {
-	token, err := getToken(c, sec)
+func Create(c kubernetes.Interface, spec v1alpha1.KlusterSpec) (string, error) {
+	token, err := getToken(c, spec.TokenSecret)
 	if err != nil {
-		return err
+		return "", err
 	}
 	client := godo.NewFromToken(token)
-	fmt.Println(client)
-	return nil
+
+	request := &godo.KubernetesClusterCreateRequest{
+		Name:        spec.Name,
+		RegionSlug:  spec.Region,
+		VersionSlug: spec.Version,
+		NodePools: []*godo.KubernetesNodePoolCreateRequest{
+			&godo.KubernetesNodePoolCreateRequest{
+				Size:  spec.NodePools[0].Size,
+				Name:  spec.NodePools[0].Name,
+				Count: spec.NodePools[0].Count,
+			},
+		},
+	}
+
+	cluster, _, err := client.Kubernetes.Create(context.Background(), request)
+	if err != nil {
+		return "", err
+	}
+
+	return cluster.ID, nil
 }
 func getToken(client kubernetes.Interface, sec string) (string, error) {
 	namespace := strings.Split(sec, "/")[0]

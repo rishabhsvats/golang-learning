@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -88,10 +87,11 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	log.Printf("kluster spec that we have is %+v\n", kluster.Spec)
-	err = do.Create(c.client, kluster.Spec.TokenSecret)
+	clusterID, err := do.Create(c.client, kluster.Spec)
 	if err != nil {
-
-	} //dp
+		log.Printf("error %s, creating the cluster", err.Error())
+	}
+	log.Printf("cluster id that was created is %s\n", clusterID)
 	return true
 }
 
