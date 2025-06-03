@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"context"
 	"log"
 	"time"
 
+	"github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	"github.com/rishabhsvats/golang-learning/kluster/pkg/do"
 	klientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
 	kinf "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/informers/externalversions/rishabhsvats.dev/v1alpha1"
 	klister "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/listers/rishabhsvats.dev/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -92,7 +95,19 @@ func (c *Controller) processNextItem() bool {
 		log.Printf("error %s, creating the cluster", err.Error())
 	}
 	log.Printf("cluster id that was created is %s\n", clusterID)
+
+	err = c.updateStatus(clusterID, "creating", kluster)
+	if err != nil {
+		log.Printf("error  %s, updating status of the kluster %s\n", err.Error(), kluster.Name)
+	}
 	return true
+}
+
+func (c *Controller) updateStatus(id, progress string, kluster *v1alpha1.Kluster) error {
+	kluster.Status.KlusterID = id
+	kluster.Status.Progress = progress
+	_, err := c.klient.RishabhsvatsV1alpha1().Klusters(kluster.Namespace).UpdateStatus(context.Background(), kluster, metav1.UpdateOptions{})
+	return err
 }
 
 func (c *Controller) handleAdd(obj interface{}) {
