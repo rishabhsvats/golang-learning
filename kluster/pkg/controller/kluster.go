@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/kanisterio/kanister/pkg/poll"
 	"github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	"github.com/rishabhsvats/golang-learning/kluster/pkg/do"
 	klientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
@@ -100,7 +101,32 @@ func (c *Controller) processNextItem() bool {
 	if err != nil {
 		log.Printf("error  %s, updating status of the kluster %s\n", err.Error(), kluster.Name)
 	}
+
+	err = c.waitForCluster(kluster.Spec, clusterID)
+	if err != nil {
+		log.Printf("error  %s, waiting for cluster to be running\n", err.Error())
+	}
+
+	err = c.updateStatus(clusterID, "running", kluster)
+	if err != nil {
+		log.Printf("error  %s, updating cluster status after waiting for the cluster\n", err.Error())
+	}
 	return true
+}
+
+func (c *Controller) waitForCluster(spec v1alpha1.KlusterSpec, clusterID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	return poll.Wait(ctx, func(ctx context.Context) (bool, error) {
+		state, err := do.ClusterState(c.client, spec, clusterID)
+		if err != nil {
+			return false, err
+		}
+		if state == "running" {
+			return true, nil
+		}
+		return false, nil
+	})
 }
 
 func (c *Controller) updateStatus(id, progress string, kluster *v1alpha1.Kluster) error {
