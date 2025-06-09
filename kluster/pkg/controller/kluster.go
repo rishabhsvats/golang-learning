@@ -9,12 +9,18 @@ import (
 	"github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	"github.com/rishabhsvats/golang-learning/kluster/pkg/do"
 	klientset "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned"
+	customscheme "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/clientset/versioned/scheme"
 	kinf "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/informers/externalversions/rishabhsvats.dev/v1alpha1"
 	klister "github.com/rishabhsvats/golang-learning/kluster/pkg/generated/listers/rishabhsvats.dev/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -28,15 +34,27 @@ type Controller struct {
 	kLister klister.KlusterLister
 	// queue
 	wq workqueue.RateLimitingInterface
+
+	recorder record.EventRecorder
 }
 
 func NewController(client kubernetes.Interface, klient klientset.Interface, klusterInformer kinf.KlusterInformer) *Controller {
+	runtime.Must(customscheme.AddToScheme(scheme.Scheme))
+
+	eveBroadCaster := record.NewBroadcaster()
+	eveBroadCaster.StartStructuredLogging(0)
+	eveBroadCaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{
+		Interface: client.CoreV1().Events(""),
+	})
+	recorder := eveBroadCaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "Kluster"})
+
 	c := &Controller{
 		client:        client,
 		klient:        klient,
 		klusterSynced: klusterInformer.Informer().HasSynced,
 		kLister:       klusterInformer.Lister(),
 		wq:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "kluster"),
+		recorder:      recorder,
 	}
 
 	klusterInformer.Informer().AddEventHandler(
@@ -95,6 +113,7 @@ func (c *Controller) processNextItem() bool {
 	if err != nil {
 		log.Printf("error %s, creating the cluster", err.Error())
 	}
+	c.recorder.Event(kluster, corev1.EventTypeNormal, "ClusterCreation", "DO API was called to create the cluster")
 	log.Printf("cluster id that was created is %s\n", clusterID)
 
 	err = c.updateStatus(clusterID, "creating", kluster)
@@ -130,9 +149,15 @@ func (c *Controller) waitForCluster(spec v1alpha1.KlusterSpec, clusterID string)
 }
 
 func (c *Controller) updateStatus(id, progress string, kluster *v1alpha1.Kluster) error {
-	kluster.Status.KlusterID = id
-	kluster.Status.Progress = progress
-	_, err := c.klient.RishabhsvatsV1alpha1().Klusters(kluster.Namespace).UpdateStatus(context.Background(), kluster, metav1.UpdateOptions{})
+
+	k, err := c.klient.RishabhsvatsV1alpha1().Klusters(kluster.Namespace).Get(context.Background(), kluster.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	k.Status.KlusterID = id
+	k.Status.Progress = progress
+	_, err = c.klient.RishabhsvatsV1alpha1().Klusters(kluster.Namespace).UpdateStatus(context.Background(), k, metav1.UpdateOptions{})
 	return err
 }
 
