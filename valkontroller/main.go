@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/spf13/pflag"
+	admv1beta1 "k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/options"
 	"k8s.io/component-base/cli/globalflag"
@@ -72,6 +76,24 @@ func main() {
 	}
 }
 
+var (
+	scheme = runtime.NewScheme()
+	codecs = serializer.NewCodecFactory(scheme)
+)
+
 func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("serverkluster validation was called")
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("error %s, reading the body", err.Error())
+	}
+
+	//get group version kind
+	gvk := admv1beta1.SchemeGroupVersion.WithKind("AdmissionReview")
+	var admissionReview admv1beta1.AdmissionReview
+	_, _, err = codecs.UniversalDeserializer().Decode(body, &gvk, &admissionReview)
+	if err != nil {
+		fmt.Printf("error %s, converting request body to admission review type", err.Error())
+	}
 }
