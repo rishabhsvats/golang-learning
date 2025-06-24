@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	klusterv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	"github.com/spf13/pflag"
 	admv1beta1 "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -95,5 +96,12 @@ func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 	_, _, err = codecs.UniversalDeserializer().Decode(body, &gvk, &admissionReview)
 	if err != nil {
 		fmt.Printf("error %s, converting request body to admission review type", err.Error())
+	}
+	//get kluster spec from admissionreview object
+	gvkKluster := klusterv1alpha1.SchemeGroupVersion.WithKind("Kluster")
+	var kluster klusterv1alpha1.Kluster
+	_, _, err = codecs.UniversalDeserializer().Decode(admissionReview.Request.Object.Raw, &gvkKluster, &kluster)
+	if err != nil {
+		fmt.Printf("error %s, while getting kluster type from admissionreview", err.Error())
 	}
 }
