@@ -8,8 +8,10 @@ import (
 	"time"
 
 	klusterv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
+	kdo "github.com/rishabhsvats/golang-learning/valkontroller/pkg/digitalocean"
 	"github.com/spf13/pflag"
 	admv1beta1 "k8s.io/api/admission/v1beta1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apiserver/pkg/server"
@@ -104,4 +106,36 @@ func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("error %s, while getting kluster type from admissionreview", err.Error())
 	}
+	var response admv1beta1.AdmissionResponse
+	allow := validateKluster(kluster.Spec)
+	if !allow {
+		response = admv1beta1.AdmissionResponse{
+			UID:     admissionReview.Request.UID,
+			Allowed: allow,
+			Result: &v1.Status{
+				Message: err.Error(),
+			},
+		}
+	} else {
+		response = admv1beta1.AdmissionResponse{
+			UID:     admissionReview.Request.UID,
+			Allowed: allow,
+			Result: &v1.Status{
+				Message: fmt.Sprintf("The specified version %s is not supported by DO", kluster.Spec.Version),
+			},
+		}
+	}
+	//write the response to response writer
+	fmt.Println(response)
+
+}
+
+func validateKluster(kspec klusterv1alpha1.KlusterSpec) bool {
+	_, err := kdo.ValidateKlusterVersion(kspec)
+	if err != nil {
+		fmt.Printf("error %s vaidating kluster resource ", err.Error())
+		return false
+	}
+
+	return true
 }
