@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -128,6 +129,15 @@ func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 	//write the response to response writer
 	fmt.Println(response)
 
+	res, err := json.Marshal(response)
+	if err != nil {
+		fmt.Printf("error %s, while converting byte slice", err.Error())
+	}
+
+	_, err = w.Write(res)
+	if err != nil {
+		fmt.Printf("error %s, while writing response to response writer", err.Error())
+	}
 }
 
 func validateKluster(kspec klusterv1alpha1.KlusterSpec) bool {
