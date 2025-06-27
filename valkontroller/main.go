@@ -126,10 +126,12 @@ func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	}
-	//write the response to response writer
-	fmt.Println(response)
 
-	res, err := json.Marshal(response)
+	admissionReview.Response = &response
+	//write the response to response writer
+	fmt.Printf("response that we are trying to return is %+v\n", response)
+
+	res, err := json.Marshal(admissionReview)
 	if err != nil {
 		fmt.Printf("error %s, while converting byte slice", err.Error())
 	}
