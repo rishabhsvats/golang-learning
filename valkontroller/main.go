@@ -10,6 +10,7 @@ import (
 
 	klusterv1alpha1 "github.com/rishabhsvats/golang-learning/kluster/pkg/apis/rishabhsvats.dev/v1alpha1"
 	kdo "github.com/rishabhsvats/golang-learning/valkontroller/pkg/digitalocean"
+	"github.com/rishabhsvats/golang-learning/valkontroller/pkg/digitalocean/admission"
 	"github.com/spf13/pflag"
 	admv1beta1 "k8s.io/api/admission/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,7 +70,8 @@ func main() {
 	c := options.Config()
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.HandlerFunc(ServeKlusterValidation))
+	mux.Handle("/validate/v1alpha1/kluster", http.HandlerFunc(ServeKlusterValidation))
+	mux.Handle("/mutate/v1alpha1/kluster", http.HandlerFunc(admission.ServeKlusterMutation))
 
 	stopCh := server.SetupSignalHandler()
 	_, ch, err := c.SecureServingInfo.Serve(mux, 30*time.Second, stopCh)
