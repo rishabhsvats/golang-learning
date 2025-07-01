@@ -109,7 +109,7 @@ func ServeKlusterValidation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("error %s, while getting kluster type from admissionreview", err.Error())
 	}
-	var response admv1beta1.AdmissionResponse
+	response := admv1beta1.AdmissionResponse{}
 	allow := validateKluster(kluster.Spec)
 	if !allow {
 		response = admv1beta1.AdmissionResponse{
