@@ -83,4 +83,31 @@ func ServeKlusterMutation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("error %s, creating patch", err.Error())
 	}
+
+	patch, err := json.Marshal(ops)
+	if err != nil {
+		fmt.Printf("error %s converting operations to slice byte")
+	}
+
+	fmt.Printf("patch that we have is %s", patch)
+
+	jsonPatchType := admv1beta1.PatchTypeJSONPatch
+	response := admv1beta1.AdmissionResponse{
+		UID:       admissionReview.Request.UID,
+		Allowed:   true,
+		PatchType: &jsonPatchType,
+		Patch:     patch,
+	}
+	admissionReview.Response = &response
+
+	fmt.Printf("response that we are trying to return is %+v\n", response)
+	res, err := json.Marshal(admissionReview)
+	if err != nil {
+		fmt.Printf("error %s, while converting response to byte slice", err.Error())
+	}
+
+	_, err = w.Write(res)
+	if err != nil {
+		fmt.Printf("error %s, writing respnse to responsewriter", err.Error())
+	}
 }
