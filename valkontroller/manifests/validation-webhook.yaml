@@ -14,6 +14,7 @@ webhooks:
     service:
       namespace: "default"
       name: "valkon"
+      path: "/validate/v1alpha1/kluster"
     caBundle: "xxx="
   admissionReviewVersions: ["v1", "v1beta1"]
   sideEffects: None
