@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -20,7 +21,14 @@ type Driver struct {
 	region   string
 	endpoint string
 
-	srv *grpc.Server
+	srv   *grpc.Server
+	ready bool
+	// http server, health check
+	// storage clients
+
+	csi.UnimplementedNodeServer
+	csi.UnimplementedControllerServer
+	csi.UnimplementedIdentityServer
 }
 type InputParams struct {
 	Name     string
@@ -53,13 +61,21 @@ func (drv *Driver) Run() error {
 		grpcAddress = filepath.FromSlash(url.Path)
 	}
 
+	if err := os.Remove(grpcAddress); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("removing listen address failed %s\n", err.Error())
+	}
+
 	listener, err := net.Listen(url.Scheme, grpcAddress)
 	if err != nil {
 		return fmt.Errorf("listen failed %s\n", err.Error())
 	}
 	fmt.Println(listener)
 	drv.srv = grpc.NewServer()
-	csi.RegisterNodeServer(drv.srv, drv)
 
-	return nil
+	csi.RegisterNodeServer(drv.srv, drv)
+	csi.RegisterControllerServer(drv.srv, drv)
+	csi.RegisterIdentityServer(drv.srv, drv)
+
+	drv.ready = true
+	return drv.srv.Serve(listener)
 }

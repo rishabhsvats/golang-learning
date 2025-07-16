@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: bsos
+  name: bsos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bsos
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: bsos
+    spec:
+      serviceAccountName: bsos-sa
+      containers:
+      - image: k8s.gcr.io/sig-storage/csi-provisioner:v3.1.0
+        name: external-provisioner
+        args:
+        - "--csi-address=$(CSI_ENDPOINT)"
+        env:
+        - name: CSI_ENDPOINT
+          value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        volumeMounts:
+        - mountPath: /var/lib/csi/sockets/pluginproxy
+          name: domain-socket
+      - image: quay.io/rhn_support_rissingh/bsos:8.1
+        name: bsos
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        args:
+        - "--endpoint=$(CSI_ENDPOINT)"
+        env:
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+        volumeMounts:
+        - mountPath: /var/lib/csi/sockets/pluginproxy
+          name: domain-socket
+      volumes:
+      - name: domain-socket
+        emptyDir: {}
+status: {}
