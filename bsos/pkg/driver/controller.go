@@ -5,10 +5,49 @@ import (
 	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/digitalocean/godo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (d *Driver) CreateVolume(context.Context, *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
-	fmt.Println("CreateVolume pf the controller service was called")
+func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+	fmt.Println("CreateVolume of the controller service was called")
+
+	// name is present
+	if req.Name == "" {
+		return nil, status.Error(codes.InvalidArgument, "CreateVolume must be called with a request name")
+	}
+
+	// extract required memory
+	// make sure the value here is not less than or equal to 0
+	// requiredBytes is not more than limitBytes
+	sizeBytes := req.CapacityRange.GetRequiredBytes()
+	fmt.Println(sizeBytes)
+	// make sure volume capabilities have been specified
+	if req.VolumeCapabilities == nil || len(req.VolumeCapabilities) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "VolumeCapabilities have not been specified")
+	}
+	// validate volume capabilities
+	//make sure accessMode that has been specified by the PVC is actually supported by SP
+	// make sure volumeMode that has been specified in the PVC is supported by us.
+
+	// create the request struct
+	volReq := godo.VolumeCreateRequest{
+		Name:          req.Name,
+		Region:        d.region,
+		SizeGigaBytes: sizeBytes / (1024 * 1024 * 1024),
+	}
+	fmt.Println(volReq)
+	// check if volumeContentSource is specified
+	// if snapshot is specified, in that case, set the snapshot ID in the volume request
+	// you will also have to make sure that the snapshot is present
+	// volReq.SnapshotID = req.VolumeContentSource.GetSnapshot().SnapshotId
+
+	//if this user have not exceeded the limit
+	// if this user can provision the requested amount etc
+
+	// handle accessibilityRequirements
+
 	return nil, nil
 }
 func (d *Driver) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
