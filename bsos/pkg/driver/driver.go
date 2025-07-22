@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/digitalocean/godo"
 	"google.golang.org/grpc"
 )
 
@@ -21,7 +23,10 @@ type Driver struct {
 	region   string
 	endpoint string
 
-	srv   *grpc.Server
+	srv *grpc.Server
+
+	storage godo.StorageService
+
 	ready bool
 	// http server, health check
 	// storage clients
@@ -37,12 +42,19 @@ type InputParams struct {
 	Region   string
 }
 
-func NewDriver(params InputParams) *Driver {
+func NewDriver(params InputParams) (*Driver, error) {
+	if params.Token == "" {
+		return nil, errors.New("token must be specified")
+	}
+
+	client := godo.NewFromToken(params.Token)
+
 	return &Driver{
 		name:     params.Name,
 		endpoint: params.Endpoint,
 		region:   params.Region,
-	}
+		storage:  client.Storage,
+	}, nil
 }
 
 // starting the gRPC server as per the CSI spec

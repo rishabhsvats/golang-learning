@@ -47,8 +47,19 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	// if this user can provision the requested amount etc
 
 	// handle accessibilityRequirements
+	// call DO api to create the volume
+	vol, _, err := d.storage.CreateVolume(ctx, &volReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Failed provisioning the volume error %s\n", err.Error()))
+	}
 
-	return nil, nil
+	return &csi.CreateVolumeResponse{
+		Volume: &csi.Volume{
+			CapacityBytes: sizeBytes,
+			VolumeId:      vol.ID,
+			// specify the content source, but only in cases where its specified in the PVC
+		},
+	}, nil
 }
 func (d *Driver) DeleteVolume(context.Context, *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	return nil, nil
