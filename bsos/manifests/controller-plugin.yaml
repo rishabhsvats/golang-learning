@@ -36,6 +36,24 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/csi/sockets/pluginproxy
           name: domain-socket
+      - image: k8s.gcr.io/sig-storage/csi-attacher:v3.5.0
+        name: external-attacher
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        args:
+        - "--csi-address=$(CSI_ENDPOINT)"
+        - "-v=5"
+        env:
+        - name: CSI_ENDPOINT
+          value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        volumeMounts:
+        - name: domain-socket
+          mountPath: /var/lib/csi/sockets/pluginproxy
       - image: quay.io/rhn_support_rissingh/bsos:8.3
         name: bsos
         resources:
