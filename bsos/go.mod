@@ -6,6 +6,7 @@ toolchain go1.23.11
 
 require (
 	github.com/container-storage-interface/spec v1.11.0 // indirect
+	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b // indirect
 	github.com/digitalocean/godo v1.159.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

@@ -1,5 +1,7 @@
 github.com/container-storage-interface/spec v1.11.0 h1:H/YKTOeUZwHtyPOr9raR+HgFmGluGCklulxDYxSdVNM=
 github.com/container-storage-interface/spec v1.11.0/go.mod h1:DtUvaQszPml1YJfIK7c00mlv6/g4wNMLanLgiUbKFRI=
+github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b h1:2EkxDInMJ3ii8mk8kZs0Qq75JpsvNOOoa5etBJluzbI=
+github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b/go.mod h1:lNrzMwI4fx6xfzieyLEpYIJPLWjT/Sak4G/hIzGTEL4=
 github.com/digitalocean/godo v1.159.0 h1:GQLfVueriDHYpwLzDcbydHs6nBvQBO8/r8r9imPC434=
 github.com/digitalocean/godo v1.159.0/go.mod h1:tYeiWY5ZXVpU48YaFv0M5irUFHXGorZpDNm7zzdWMzM=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
