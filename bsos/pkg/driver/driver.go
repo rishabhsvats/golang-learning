@@ -25,9 +25,9 @@ type Driver struct {
 
 	srv *grpc.Server
 
+	//storage ec2.Client
 	storage godo.StorageService
-
-	ready bool
+	ready   bool
 	// http server, health check
 	// storage clients
 
@@ -46,7 +46,12 @@ func NewDriver(params InputParams) (*Driver, error) {
 	if params.Token == "" {
 		return nil, errors.New("token must be specified")
 	}
+	// cfg, err := config.LoadDefaultConfig(context.TODO())
+	// if err != nil {
+	// 	panic("unable to load SDK config: " + err.Error())
+	// }
 
+	//ec2Client := ec2.NewFromConfig(cfg)
 	client := godo.NewFromToken(params.Token)
 
 	return &Driver{
@@ -54,6 +59,7 @@ func NewDriver(params InputParams) (*Driver, error) {
 		endpoint: params.Endpoint,
 		region:   params.Region,
 		storage:  client.Storage,
+		//storage: ec2Client
 	}, nil
 }
 

@@ -37,6 +37,20 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		Region:        d.region,
 		SizeGigaBytes: sizeBytes / (1024 * 1024 * 1024),
 	}
+	// createVolInput := &ec2.CreateVolumeInput{
+	// 	AvailabilityZone: aws.String("us-east-1a"),
+	// 	Size:             aws.Int32(int32(sizeBytes) / (1024 * 1024 * 1024)), // GB
+	// 	VolumeType:       ec2types.VolumeTypeGp3,                             // gp2, gp3, io1, etc.
+	// 	TagSpecifications: []ec2types.TagSpecification{
+	// 		{
+	// 			ResourceType: ec2types.ResourceTypeVolume,
+	// 			Tags: []ec2types.Tag{
+	// 				{Key: aws.String("Name"), Value: aws.String("my-volume")},
+	// 			},
+	// 		},
+	// 	},
+	// }
+
 	fmt.Println(volReq)
 	// check if volumeContentSource is specified
 	// if snapshot is specified, in that case, set the snapshot ID in the volume request
@@ -52,7 +66,12 @@ func (d *Driver) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Failed provisioning the volume error %s\n", err.Error()))
 	}
+	// volOutput, err := d.storage.CreateVolume(context.TODO(), createVolInput)
+	// if err != nil {
+	// 	panic("failed to create volume: " + err.Error())
+	// }
 
+	//fmt.Printf("Created volume ID: %s\n", *volOutput.VolumeId)
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			CapacityBytes: sizeBytes,
