@@ -3,7 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	metadata "github.com/digitalocean/go-metadata"
@@ -45,9 +48,69 @@ func (d *Driver) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRe
 	// figure out the source and target
 	source := getPathFromVolumeName(volumeName)
 	target := req.StagingTargetPath
-	return nil, nil
+
+	// format the volume and create a file syste on it
+	// mkfs.fstype -F blockdevice
+	// mkfs.ext4 -F /dev/...
+	err := formatAndMakeFS(source, fsType)
+	if err != nil {
+		fmt.Printf("unable to create fs error %s\n", err.Error())
+		return nil, status.Error(codes.Internal, fmt.Sprintf("unable to create fs error %s\n", err.Error()))
+	}
+
+	err = mount(source, target, fsType, mnt.MountFlags)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Error %s, mounting the source %s to taget %s\n", err.Error(), source, target))
+	}
+
+	return &csi.NodeStageVolumeResponse{}, nil
+}
+func formatAndMakeFS(source, fsType string) error {
+	mkfsCmd := fmt.Sprintf("mkfs.%s", fsType)
+
+	_, err := exec.LookPath(mkfsCmd)
+	if err != nil {
+		return fmt.Errorf("unable to find the mkfs (%s) utiltiy errors is %s", mkfsCmd, err.Error())
+	}
+
+	// actually run mkfs.ext4 -F source
+	mkfsArgs := []string{"-F", source}
+
+	out, err := exec.Command(mkfsCmd, mkfsArgs...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("create fs command failed output: %s, and err: %s\n", out, err.Error())
+	}
+	return nil
 }
 
+func mount(source, target, fsType string, options []string) error {
+	mountCmd := "mount"
+
+	if fsType == "" {
+		return fmt.Errorf("fstype is not provided")
+	}
+
+	mountArgs := []string{}
+	err := os.MkdirAll(target, 0777)
+	if err != nil {
+		return fmt.Errorf("error: %s, creating the target dir\n", err.Error())
+	}
+	mountArgs = append(mountArgs, "-t", fsType)
+
+	// check of options and then append them at the end of the mount command
+	if len(options) > 0 {
+		mountArgs = append(mountArgs, "-o", strings.Join(options, ","))
+	}
+
+	mountArgs = append(mountArgs, source)
+	mountArgs = append(mountArgs, target)
+
+	out, err := exec.Command(mountCmd, mountArgs...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error %s, mounting the source %s to tar %s. Output: %s\n", err.Error(), source, target, out)
+	}
+	return nil
+}
 func getPathFromVolumeName(volName string) string {
 	return fmt.Sprintf("/dev/disk/by-id/scsi-0DO_Volume_%s", volName)
 }
