@@ -12,6 +12,12 @@ spec:
         name: node-plugin
     spec:
       volumes:
+        - name: device-dir
+          hostPath:
+            path: /dev
+        - name: pods-vol-dir
+          hostPath:
+            path: /var/lib/kubelet
         - name: registration-dir
           hostPath:
             path: /var/lib/kubelet/plugins_registry/
@@ -41,5 +47,10 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
+        - name: pods-vol-dir
+          mountPath: /var/lib/kubelet
+          mountPropagation: "Bidirectional"
+        - name: device-dir
+          mountPath: /dev
         - name: plugin-dir
           mountPath: /csi
