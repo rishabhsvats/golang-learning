@@ -117,7 +117,35 @@ func getPathFromVolumeName(volName string) string {
 func (d *Driver) NodeUnstageVolume(context.Context, *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	return nil, nil
 }
-func (d *Driver) NodePublishVolume(context.Context, *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+func (d *Driver) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
+	fmt.Printf("NodePublishVolume was called with source %s and target %s\n", req.StagingTargetPath, req.TargetPath)
+
+	// make sure the requried fields are set and not empty
+
+	options := []string{"bind"}
+	if req.Readonly {
+		options = append(options, "ro")
+	}
+
+	// get req.VolumeCaps and make sure that you handle request for block mode as well
+	// here we are just handling request for filesystem mode
+	// in case of block mode, the source is going to be the device dir where volume was attached form ControllerPubVolume RPC
+
+	fsType := "ext4"
+	if req.VolumeCapability.GetMount().FsType != "" {
+		fsType = req.VolumeCapability.GetMount().FsType
+	}
+	source := req.StagingTargetPath
+	target := req.TargetPath
+
+	// we want to run mount -t fstype source target -o bind,ro
+
+	err := mount(source, target, fsType, options)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Error %s, mounting the volume from staging dir to target dir", err.Error()))
+	}
+
+	return &csi.NodePublishVolumeResponse{}, nil
 	return nil, nil
 }
 func (d *Driver) NodeUnpublishVolume(context.Context, *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
