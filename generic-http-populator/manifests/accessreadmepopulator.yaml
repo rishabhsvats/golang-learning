@@ -1,0 +1,6 @@
+apiVersion: k8s.viveksingh.dev/v1alpha1
+kind: GenericHTTPPopulator
+metadata:
+  name: kluster-readme-pop
+spec:
+  uri: https://raw.githubusercontent.com/rishabhsvats/kluster/master/README.md
