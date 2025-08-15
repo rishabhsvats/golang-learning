@@ -1,9 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"os"
+	"path"
 
 	populatorMachinery "github.com/kubernetes-csi/lib-volume-populator/populator-machinery"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,7 +56,43 @@ func main() {
 	}
 }
 func populate(uri string) {
+	if uri == "" {
+		log.Printf("URI cannot be empty")
+		panic(errors.New("URI cannot be empty"))
+	}
 
+	req, err := http.NewRequest(http.MethodGet, uri, nil)
+	if err != nil {
+		log.Printf("Failed creating new request, error %s\n", err.Error())
+		panic(errors.New(err.Error()))
+	}
+
+	fileName := path.Base(req.URL.Path)
+
+	f, err := os.Create(path.Join(mountPath, fileName))
+	if err != nil {
+		log.Printf("failed to create file %s\n", err.Error())
+		panic(errors.New(err.Error()))
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("failed making the request %s\n", err.Error())
+		panic(errors.New(err.Error()))
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("failed to read data from response %s\n", err.Error())
+		panic(errors.New(err.Error()))
+	}
+
+	_, err = f.Write(data)
+	if err != nil {
+		log.Printf("Failed writing data to file %s\n", err.Error())
+		panic(errors.New(err.Error()))
+	}
+
+	log.Println("Populated successfully")
 }
 
 type GenericHTTPPopulator struct {
